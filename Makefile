@@ -29,6 +29,11 @@ ios:
 	@echo "Done building."
 	@echo "Import \"$(GOBIN)/Geth.framework\" to use the library."
 
+pics:
+	build/env.sh go run build/ci.go install ./cmd/pics
+	@echo "Done building."
+	@echo "Run \"$(GOBIN)/pics\" to launch pics."
+
 test: all
 	build/env.sh go run build/ci.go test
 

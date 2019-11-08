@@ -21,7 +21,8 @@ build/_vendor/pkg
 *~
 .project
 .settings
-
+*.dot
+*.png
 # used by the Makefile
 /build/_workspace/
 /build/bin/

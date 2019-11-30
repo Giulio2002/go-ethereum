@@ -12,7 +12,7 @@ func main() {
 	switch *pic {
 	case "database_map":
 		{
-			if err := databaseMap(); err != nil {
+			if err := initialState1(); err != nil {
 				fmt.Printf("%v\n", err)
 			}
 		}

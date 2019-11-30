@@ -203,6 +203,16 @@ func (db *Database) Compact(start []byte, limit []byte) error {
 	return nil
 }
 
+// MemCopy create copy of the database in memory
+func (db *Database) MemCopy() *Database {
+	newDb := New()
+	it := db.NewIterator()
+	for it.Next() {
+		newDb.Put(it.Key(), it.Value())
+	}
+	return newDb
+}
+
 // Len returns the number of entries currently present in the memory database.
 //
 // Note, this method is only used for testing (i.e. not public in general) and

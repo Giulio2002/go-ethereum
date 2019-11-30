@@ -8,22 +8,22 @@ import (
 // Primitives for drawing hexary strings in graphviz dot format
 
 var HexIndexColors = []string{
-	"#FFFFFF", // white
-	"#FBF305", // yellow
-	"#FF6403", // orange
-	"#DD0907", // red
-	"#F20884", // magenta
-	"#4700A5", // purple
-	"#0000D3", // blue
-	"#02ABEA", // cyan
-	"#1FB714", // green
-	"#006412", // dark green
-	"#562C05", // brown
-	"#90713A", // tan
-	"#C0C0C0", // light grey
-	"#808080", // medium grey
-	"#404040", // dark grey
-	"#000000", // black
+	"#FFFFFF", // white 0
+	"#FBF305", // yellow 1
+	"#FF6403", // orange 2
+	"#DD0907", // red 3
+	"#F20884", // magenta 4
+	"#4700A5", // purple 5
+	"#0000D3", // blue 6
+	"#02ABEA", // cyan 7
+	"#1FB714", // green 8
+	"#006412", // dark green 9
+	"#562C05", // brown A
+	"#90713A", // tan B
+	"#C0C0C0", // light grey C
+	"#808080", // medium grey D
+	"#404040", // dark grey E
+	"#000000", // black F
 }
 
 var HexFontColors = []string{

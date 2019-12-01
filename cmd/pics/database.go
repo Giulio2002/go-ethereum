@@ -29,21 +29,21 @@ var keyPrefixes = []struct {
 	prefix string
 	label  string
 }{
-	{"LastHeader", "LastHeader"},
-	{"LastBlock", "LastBlock"},
-	{"LastFast", "LastFast"},
-	{"TrieSync", "TrieSync"},
+	{"LastHeader", "Last Header"},
+	{"LastBlock", "Last Block"},
+	{"LastFast", "Last Fast"},
+	{"TrieSync", "Trie Sync"},
 	{"h", "Headers"},
 	{"r", "Receipt"},
-	{"b", "BlockBodies"},
-	{"H", "HeaderNumbers"},
+	{"b", "Block Bodies"},
+	{"H", "Header Numbers"},
 	{"ethereum-config-", "Config"},
 	{"secure-key-", "Preimages"},
-	{"l", "TxIndex"},
-	{"B", "BloomBits"},
-	{"t", "TotalDifficulty"},
-	{"n", "HeaderHash"},
-	{"DatabaseVersion", "DatabaseVersion"},
+	{"l", "Transaction Index"},
+	{"B", "Bloom Bits"},
+	{"t", "Total Difficulty"},
+	{"n", "Header Hash"},
+	{"DatabaseVersion", "Database Version"},
 }
 
 // Assumes that the changes are only insertions, now deletions
@@ -56,6 +56,7 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 	startGraph(f)
 	kvMap := make(map[string][]int)
 	var hashes []int
+	noValues := make(map[int]struct{})
 	it := second.NewIterator()
 	i := 0
 	for it.Next() {
@@ -67,16 +68,16 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		k := string(it.Key())
 		key := trie.KeybytesTohex(it.Key())
 		val := trie.KeybytesTohex(it.Value())
-		horizontal(f, key, 0, fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
+		horizontal(f, key, len(key), fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
 		if len(val) > 0 {
-			if len(val) > 32 {
-				shortenedVal := val[:32]
-				horizontal(f, shortenedVal, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
+			if len(val) > 64 {
+				compression := len(val) - 64
+				horizontal(f, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
 			} else {
-				horizontal(f, val, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
+				horizontal(f, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
 			}
 		} else {
-			circle(f, fmt.Sprintf("v_%d", i), "...", false)
+			noValues[i] = struct{}{}
 		}
 		// Produce edge
 		fmt.Fprintf(f, `k_%d -> v_%d;
@@ -103,14 +104,22 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		}
 		startCluster(f, n, p.label)
 		for _, item := range lst {
-			fmt.Fprintf(f, "k_%d;v_%d;", item, item)
+			if _, ok1 := noValues[item]; ok1 {
+				fmt.Fprintf(f, "k_%d;", item)
+			} else {
+				fmt.Fprintf(f, "k_%d;v_%d;", item, item)
+			}
 		}
 		fmt.Fprintf(f, "\n")
 		endCluster(f)
 	}
 	startCluster(f, i, "hashes")
 	for _, item := range hashes {
-		fmt.Fprintf(f, "k_%d;v_%d;", item, item)
+		if _, ok1 := noValues[item]; ok1 {
+			fmt.Fprintf(f, "k_%d;", item)
+		} else {
+			fmt.Fprintf(f, "k_%d;v_%d;", item, item)
+		}
 	}
 	fmt.Fprintf(f, "\n")
 	endCluster(f)

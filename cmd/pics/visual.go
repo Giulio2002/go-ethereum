@@ -71,7 +71,7 @@ func horizontal(w io.Writer, hex []byte, highlighted int, name string, indexColo
 			}
 		} else if compression > 0 && i == len(hex)-3 {
 			fmt.Fprintf(w,
-				`		<td border="0">-</td>
+				`		<td border="0">-----------</td>
 			`)
 		}
 	}

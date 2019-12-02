@@ -65,9 +65,29 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		if firstV, err := first.Get(it.Key()); err == nil && firstV != nil && bytes.Equal(firstV, it.Value()) {
 			continue
 		}
-		// Produce pair of nodes
+		// Find prefix
+		var prefixFound bool
+		var prefix string
+		var clusterLabel string
 		k := string(it.Key())
-		key := trie.KeybytesTohex(it.Key())
+		for _, p := range keyPrefixes {
+			if strings.HasPrefix(k, p.prefix) {
+				l := kvMap[p.prefix]
+				l = append(l, i)
+				kvMap[p.prefix] = l
+				prefixFound = true
+				prefix = p.prefix
+				clusterLabel = p.label
+				break
+			}
+		}
+		// Produce pair of nodes
+		var key []byte
+		if len(it.Key()) == len(prefix) {
+			key = trie.KeybytesTohex(it.Key())
+		} else {
+			key = trie.KeybytesTohex(it.Key()[len(prefix):])
+		}
 		val := trie.KeybytesTohex(it.Value())
 		horizontal(f, key, 0, fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
 		if len(val) > 0 {
@@ -82,20 +102,6 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		}
 		// Produce edge
 		fmt.Fprintf(f, "k_%d -> v_%d;\n", i, i)
-		var prefixFound bool
-		var prefix string
-		var clusterLabel string
-		for _, p := range keyPrefixes {
-			if strings.HasPrefix(k, p.prefix) {
-				l := kvMap[p.prefix]
-				l = append(l, i)
-				kvMap[p.prefix] = l
-				prefixFound = true
-				prefix = p.prefix
-				clusterLabel = p.label
-				break
-			}
-		}
 		if !prefixFound {
 			hashes = append(hashes, i)
 			prefix = "hashes"

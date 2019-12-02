@@ -34,7 +34,7 @@ var keyPrefixes = []struct {
 	{"LastFast", "Last Fast"},
 	{"TrieSync", "Trie Sync"},
 	{"h", "Headers"},
-	{"r", "Receipt"},
+	{"r", "Receipts"},
 	{"b", "Block Bodies"},
 	{"H", "Header Numbers"},
 	{"ethereum-config-", "Config"},
@@ -48,11 +48,12 @@ var keyPrefixes = []struct {
 
 // Assumes that the changes are only insertions, now deletions
 func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database, number int) error {
-	filename := fmt.Sprintf("changes_%d.dot", number)
+	filename := fmt.Sprintf("geth_changes_%d.dot", number)
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
+	perBucketFiles := make(map[string]*os.File)
 	startGraph(f)
 	kvMap := make(map[string][]int)
 	var hashes []int
@@ -68,33 +69,62 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		k := string(it.Key())
 		key := trie.KeybytesTohex(it.Key())
 		val := trie.KeybytesTohex(it.Value())
-		horizontal(f, key, len(key), fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
+		horizontal(f, key, 0, fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
 		if len(val) > 0 {
 			if len(val) > 64 {
 				compression := len(val) - 64
-				horizontal(f, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
+				horizontal(f, val, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
 			} else {
-				horizontal(f, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
+				horizontal(f, val, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
 			}
 		} else {
 			noValues[i] = struct{}{}
 		}
 		// Produce edge
-		fmt.Fprintf(f, `k_%d -> v_%d;
-`, i, i)
+		fmt.Fprintf(f, "k_%d -> v_%d;\n", i, i)
 		var prefixFound bool
+		var prefix string
+		var clusterLabel string
 		for _, p := range keyPrefixes {
 			if strings.HasPrefix(k, p.prefix) {
 				l := kvMap[p.prefix]
 				l = append(l, i)
 				kvMap[p.prefix] = l
 				prefixFound = true
+				prefix = p.prefix
+				clusterLabel = p.label
 				break
 			}
 		}
 		if !prefixFound {
 			hashes = append(hashes, i)
+			prefix = "hashes"
+			clusterLabel = "hashes"
 		}
+		var f1 *os.File
+		var ok bool
+		if f1, ok = perBucketFiles[prefix]; !ok {
+			f1, err = os.Create(fmt.Sprintf("geth_changes_%d_%s_%d.dot", number, prefix, len(perBucketFiles)))
+			if err != nil {
+				return err
+			}
+			startGraph(f1)
+			startCluster(f1, 0, clusterLabel)
+			perBucketFiles[prefix] = f1
+		}
+		horizontal(f1, key, len(key), fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
+		if len(val) > 0 {
+			if len(val) > 64 {
+				compression := len(val) - 64
+				horizontal(f1, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
+			} else {
+				horizontal(f1, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
+			}
+		} else {
+			noValues[i] = struct{}{}
+		}
+		// Produce edge
+		fmt.Fprintf(f1, "k_%d -> v_%d;\n", i, i)
 		i++
 	}
 	for n, p := range keyPrefixes {
@@ -123,13 +153,25 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 	}
 	fmt.Fprintf(f, "\n")
 	endCluster(f)
-	endGraph(f)
+	endCluster(f)
 	if err := f.Close(); err != nil {
 		return err
 	}
 	cmd := exec.Command("dot", "-Tpng:gd", "-O", filename)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		fmt.Printf("error: %v, output: %s\n", err, output)
+	}
+	for _, f1 := range perBucketFiles {
+		fmt.Fprintf(f1, "\n")
+		endCluster(f1)
+		endCluster(f1)
+		if err := f1.Close(); err != nil {
+			return err
+		}
+		cmd := exec.Command("dot", "-Tpng:gd", "-O", f1.Name())
+		if output, err := cmd.CombinedOutput(); err != nil {
+			fmt.Printf("error: %v, output: %s\n", err, output)
+		}
 	}
 	return nil
 }

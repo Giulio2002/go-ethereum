@@ -85,15 +85,16 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		var key []byte
 		if len(it.Key()) == len(prefix) {
 			key = trie.KeybytesTohex(it.Key())
+			key = key[:len(key)-1] // Remove terminating 0x10
 		} else {
-			key = trie.KeybytesTohex(it.Key()[len(prefix):])
+			key = trie.KeybytesTohex(it.Key()[2*len(prefix):])
 		}
 		val := trie.KeybytesTohex(it.Value())
+		val = val[:len(val)-1] // Remove terminating 0x10
 		horizontal(f, key, 0, fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
 		if len(val) > 0 {
 			if len(val) > 64 {
-				compression := len(val) - 64
-				horizontal(f, val, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
+				HexBox(f, fmt.Sprintf("v_%d", i), val, 64, false /*compresses*/, false /*highlighted*/)
 			} else {
 				horizontal(f, val, 0, fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
 			}
@@ -121,8 +122,7 @@ func stateDatabaseComparison(first *memorydb.Database, second *memorydb.Database
 		horizontal(f1, key, len(key), fmt.Sprintf("k_%d", i), HexIndexColors, HexFontColors, 0)
 		if len(val) > 0 {
 			if len(val) > 64 {
-				compression := len(val) - 64
-				horizontal(f1, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, compression)
+				HexBox(f1, fmt.Sprintf("v_%d", i), val, 64, false /*compresses*/, true /*highlighted*/)
 			} else {
 				horizontal(f1, val, len(val), fmt.Sprintf("v_%d", i), HexIndexColors, HexFontColors, 0)
 			}
@@ -230,7 +230,7 @@ func initialState1() error {
 	}
 	_ = blockchain.StateCache().TrieDB()
 	// construct the first diff
-	if err = stateDatabaseComparison(snapshotDb, memDb, 1); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 0); err != nil {
 		return err
 	}
 
@@ -347,7 +347,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[0]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 2); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 1); err != nil {
 		return err
 	}
 	// BLOCK 2
@@ -355,7 +355,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[1]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 3); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 2); err != nil {
 		return err
 	}
 	// BLOCK 3
@@ -363,7 +363,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[2]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 4); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 3); err != nil {
 		return err
 	}
 	// BLOCK 4
@@ -371,7 +371,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[3]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 5); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 4); err != nil {
 		return err
 	}
 	// BLOCK 5
@@ -379,7 +379,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[4]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 6); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 5); err != nil {
 		return err
 	}
 	// BLOCK 6
@@ -387,7 +387,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[5]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 7); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 6); err != nil {
 		return err
 	}
 	// BLOCK 7
@@ -395,7 +395,7 @@ func initialState1() error {
 	if _, err = blockchain.InsertChain(types.Blocks{blocks[6]}); err != nil {
 		return err
 	}
-	if err = stateDatabaseComparison(snapshotDb, memDb, 6); err != nil {
+	if err = stateDatabaseComparison(snapshotDb, memDb, 7); err != nil {
 		return err
 	}
 	return nil
